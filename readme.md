@@ -1,159 +1,113 @@
-# LGS Tray Battery (Motospeed X6 Edition)
+# Motospeed X6 Tray Battery Monitor
 
-A fork of [LGSTrayBattery](https://github.com/andyvorld/LGSTrayBattery) with added support for the **Motospeed X6** wireless gaming mouse, alongside Logitech HID++ and Logitech G Hub devices.
+A lightweight Windows system tray battery monitor and status indicator specifically tailored for the **Motospeed X6 Wireless Gaming Mouse**. Displays live battery percentage, charging state, and rich tooltips directly in your Windows taskbar with minimal resource usage and zero bloat.
 
-## How to install
+*(Forked and adapted from [andyvorld/LGSTrayBattery](https://github.com/andyvorld/LGSTrayBattery) with dedicated Motospeed X6 HID support).*
+
+---
+
+## ⚡ Quick Start & Download
 
 [![GitHub Release](https://img.shields.io/github/v/release/Jacobz888/LGSTrayBattery-MotospeedX6?sort=semver)](https://github.com/Jacobz888/LGSTrayBattery-MotospeedX6/releases/latest)
 
-Please visit [the latest release page](https://github.com/Jacobz888/LGSTrayBattery-MotospeedX6/releases/latest) and download the release zip files from assets. Builds with the `-standalone` suffix are pre-bundled with .NET 8 and do not require any further dependencies; the non-standalone version requires .NET 8 to be installed.
+Download the latest version from the [Releases Page](https://github.com/Jacobz888/LGSTrayBattery-MotospeedX6/releases/latest):
 
-## Changes from V2
-*When migrating from earlier versions, device ids may have changed.*
-- Moved to .Net 8
-- Realtime reactive icons and rich tooltips
-    - Light/Dark theme is now reactive in realtime
-- Rewritten to use hidapi directly for hotplug support
-    - Wired/Wireless devices like the G403 should behave like a single device
-- Multi-device mode
-- Numerical Icons
-- HID.NET manager has been deprecated
-- Migrated to using a `.toml` for appsettings
+- **`Release_v1_0_0-standalone.zip` (Recommended)**: Self-contained build bundled with the .NET 8 runtime. Just extract the archive and run `LGSTray.exe` — no prerequisites needed!
+- **`Release_v1_0_0.zip`**: Framework-dependent build (~3 MB) for systems that already have [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) installed.
 
-## Features
-### Tray Indicator
-![image](https://user-images.githubusercontent.com/24492062/138280300-6966b6a4-ff6d-46e6-9698-d2c8d612eb11.png)
+---
 
-Battery percentage and voltage (if supported) in a tray tooltip with notification icon.
+## 🔍 How It Works for Motospeed X6
 
-Right-click for more options.
+Instead of requiring heavy proprietary software or clunky OEM background utilities, this application communicates directly with your **Motospeed X6** over native USB HID:
 
-### Multiple Icons
-![image](Assets/multi_icon.png)
+### 1. Direct USB HID Communication
+The app communicates with the device through `hidapi.dll` without any external drivers needed:
+- **Vendor ID (VID)**: `0x0BDA`
+- **Product IDs (PID)**:
+  - `0xFFE0` / `0xFFF2`: 2.4 GHz wireless receiver / dongle mode
+  - `0xFFF1`: Direct USB-C wired mode (plugged in & charging)
+- **Target Interface**: The application attaches to **Interface 4 (`mi_04`)**, which is the mouse's vendor-specific telemetry report channel.
 
-Depending on the number of devices selected in the context menu, multiple devices can be seen simultatniously
+### 2. Battery & Charging Protocol
+- **Telemetry Request**: Every poll interval, the app writes an HID request report (`0xB5 0x06`) to the mouse.
+- **Telemetry Response**: The mouse replies with a 64-byte report starting with report ID `0xB4`.
+- **Level Calculation & State Detection**:
+  - The raw battery byte is extracted from byte index 20 (`resp[20]`).
+  - **Charging over Wireless**: If the raw value is $\ge 128$, the mouse is actively charging (e.g. on a dock or cable). The actual percentage is calculated as `raw_value - 128` (clamped between 0% and 100%).
+  - **Discharging**: If the raw value is $< 128$, the mouse is operating on battery power, and the value directly represents the percentage (0–100%).
+  - **Wired Connection**: When connected directly via USB cable (PID `0xFFF1`), the app recognizes the plugged-in charging state immediately.
 
-### Numerical Icons
-![image](Assets/numerical_icon.png)
+---
 
-Display the current battery percentage as a number.
+## ✨ Features
 
-*In numerical display mode, charging status will not be displayed*
+- **Real-Time Tray Icon**: Clean icon right in the Windows notification area showing battery level at a glance.
+- **Numerical Mode**: Option to display the battery percentage directly as a number on the tray icon.
+- **Rich Hover Tooltips**: Hover over the tray icon to see the device name, battery percentage, and charging / discharging status.
+- **Theme Reactive**: Automatically switches between Light and Dark mode icon designs to match your Windows theme in real time.
+- **Local HTTP REST API**: Optional embedded web server (running on `http://localhost:12321/`) exposing device battery data for widgets, Stream Deck profiles, or custom integrations.
+- **Minimal Resource Footprint**: Extremely light on RAM and CPU, polling only on configurable intervals to protect mouse sleep mode and battery life.
 
-### Reactive Icons
-![image](https://user-images.githubusercontent.com/24492062/138284660-95949372-c59a-4569-9545-0cfe0506d1fb.png)
+---
 
-*Icon changes to match devices type (Current supported: mouse, keyboard and headsets)*
+## ⚙️ Configuration (`appsettings.toml`)
 
-![image](https://user-images.githubusercontent.com/24492062/138285048-ad229703-5c4e-430e-b107-c50eb341e46b.png)
+Configuration is stored in `appsettings.toml` in the app directory:
 
-*Icon changes to match light/dark system theme*
+```toml
+[UI]
+enableRichToolTips = true
 
-![image](Assets/charging_icon.png)
+[Motospeed]
+enabled = true          # Set to true to enable Motospeed X6 polling
+pollPeriod = 60         # Polling interval in seconds (default: 60)
 
-*Icon changes to reflect current charging status*
+[HTTPServer]
+enabled = true          # Set to false to disable local HTTP server
+addr = "localhost"      # Bind address
+port = 12321            # Port number
+useIpv6 = true
 
-### Http/Web "server" api
-By default the running of the http server is enabled. The IP address and port used for bindings are under `addr` and `port` respectively with the defaults being `localhost` and `12321`.
-
-`addr` accepts either a hostname (`DESKTOP-1234`) or an IP address (`127.0.0.1`) to bind to, if you are not sure use `localhost` or if you have admin permission `0.0.0.0` to bind to all interfaces.
-
-IPv6 can also be disabled with `useIpv6` in the event that dual stack networking is causing issues.
-
-If any issues arise from running the server, it can be turned off by the `enable` value in `appsettings.toml` under `[HTTPServer]`.
-
-![image](Assets/server_index.png)
-
-Visit `http://{addr}:{port}/` on your browser to view the list of devices available.
-
-![image](https://user-images.githubusercontent.com/24492062/138281030-f40ba805-69bf-48ac-a126-6f58f9ca7828.png)
-
-With the `deviceID`, a HTTP/GET request to `{addr}:{port}/device/{deviceID}`, will result in an xml document of the name and battery status of the device. Devices that do not support `battery_voltage` will report 0.00.
-
-Device ids starting with `dev` originates from tapping into Logitech GHUB's own drivers, while random numbers are from the natively implement HID++ code. Thus, there are some fields that different between the two,
-
-|                 | GHUB* | Native  |
-|-----------------|-------|---------|
-| device_id       | ✔️   | ✔️     |
-| device_name     | ✔️   | ✔️     |
-| device_type     | ✔️   | ✔️     |
-| battery_percent | ✔️   | ✔️     |
-| battery_voltage | ❌   | ✔️**   |
-| mileage***      | ✔️   | ❌     |
-| charging        | ✔️   | ✔️     |
-
-\* - Requires Logitech G Hub Installed
-
-\** - Depends on the device
-
-\*** - Logitech G Hub's metric of estimated life left on the battery
-
-## HID++ Device Sources
-As of v3.0.0, there are 2 sources in which the program will pull battery status,
-
-- Logitech G Hub via Websockets
-- Native HID, hidapi via PInvoke (Called "Native" in settings)
-
-These sources can be individually disabled/enabled before runtime via `appsettings.toml`, in the their respective sections,
-
-```
 [GHub]
-enabled = true
+enabled = false         # Disable Logitech G Hub polling if not needed
 
 [Native]
-enabled = true
+enabled = false         # Disable Logitech HID++ polling if not needed
 ```
 
-*GHub is Logitech G Hub, Native is hidapi*
+> **Tip**: If you only use the Motospeed X6 mouse, set `[GHub].enabled = false` and `[Native].enabled = false` to disable scanning for Logitech devices and ensure the fastest, leanest startup.
 
-## appsettings.toml
-Refer to https://toml.io/en/ for a guide on toml syntax.
+---
 
-*Note the `"` around strings*
+## 🛠️ How to Build from Source
 
-In the event of an invalid settings, at launch the app will prompt you for a reset to the default settings.
+### Prerequisites
+- Windows 10 / 11
+- [.NET 8 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
+- Python 3.x (to run the packaging helper `publish.py`)
 
+### Building
+1. Clone the repository:
+   ```powershell
+   git clone https://github.com/Jacobz888/LGSTrayBattery-MotospeedX6.git
+   cd LGSTrayBattery-MotospeedX6
+   ```
 
-### `[Native]` settings
-- `retryTime` - The time in seconds to re-try a device on a failed device state query; usually the device is asleep.
-- `pollPeriod` - The time in seconds to request an update from the device, keep this as high as possible as it may interfere with the default power saving sleep modes of devices.
-- `disabledDevices` - If all else fails, and the addition of a new device has caused the app to be unusable. Adding a part of the device name into this list will prevent the device from being polled. E.g. The following will disable the G403 and G502,
-```
-disabledDevices = [
-    "G403",
-    "G502"
-]
-```
+2. Build the project:
+   ```powershell
+   dotnet build
+   ```
 
-## Known Issues
-### Common
-- Native HID and GHUB do not provide similar percentages, this is due to how native and GHUB calculates percentages from the device's voltages. Native uses an average curve of a 3.7V lipo battery, while GHUB will use a lookup table specific to the device.
+3. Package release archives:
+   ```powershell
+   python publish.py
+   ```
+   Packaged zip files will be placed in `bin/Release/Publish/`.
 
-### Native HID (hidapi)
-- Certain wired devices like the G403 when in wired mode does not report the number of HID devices connected and will respond to all request. Causing battery polls to occur 6x per request.
-- Device and protocol discovery changed from the previous method, some devices like the G533 headsets might not be detected, try the GHUB based manager.
+---
 
-### GHUB
-- Future GHUB version may change IPC protocol/endpoints (currently websocket)
+## 💡 Acknowledgements
 
-## Working with
-- Motospeed X6 Wireless Gaming Mouse
-- G403 Wireless
-- MX Anywhere 2
-
-### Community Tested
-*HID Backend has changed, would need restesting of devices, please raise a PR to add to this list*
-
-
-## How to Build project
-TBA
-
-## Acknowledgements
-This project began as a task with me messing around with my mouse for battery tracking.
-
-- [Solaar](https://github.com/pwr-Solaar/Solaar), for the source code to base the HID++ paramters and reverse engineering of the protocol.
-- [XB1ControllerBatteryIndicator](https://github.com/NiyaShy/XB1ControllerBatteryIndicator), for the idea and base of the icons
-- [The Noun Project](https://thenounproject.com/), for base icons
-    - Mouse, By projecthayat, ID, In the Technology & computer hardware Collection
-    - Keyboard, By HideMaru, ID, In the Electronic BL.2 Collection
-    - Headphones, By Peter Lakenbrink, DE, In the School and Online Learning Glyph Collection
+- [andyvorld/LGSTrayBattery](https://github.com/andyvorld/LGSTrayBattery) — The original tray application base and WPF notification framework.
+- [libusb/hidapi](https://github.com/libusb/hidapi) — Library for communicating with USB HID devices.
