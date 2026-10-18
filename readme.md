@@ -41,22 +41,34 @@ The app communicates with the device through `hidapi.dll` without any external d
 ---
 
 ## ✨ Features
-- **Rich Hover Tooltips**: Hover over the tray icon to see the device name, battery percentage, and charging / discharging status.
- <img width="142" height="43" alt="image" src="https://github.com/user-attachments/assets/81ba7718-6e19-486f-9f4b-808123ced674" />
 
-- **Numerical Mode**: Option to display the battery percentage directly as a number on the tray icon.
-  <img width="69" height="44" alt="image" src="https://github.com/user-attachments/assets/be51e2a0-a5b9-4da6-823d-b2b7723e324f" />
+### 🔋 Real-Time Tray Indicator
+Clean notification area icon showing battery level at a glance:
 
-- **Real-Time Tray Icon**: Clean icon right in the Windows notification area showing battery level at a glance.
- <img width="96" height="43" alt="image" src="https://github.com/user-attachments/assets/51c52468-40b4-43ed-97c1-a10710811566" />
+![Real-Time Tray Icon](https://github.com/user-attachments/assets/51c52468-40b4-43ed-97c1-a10710811566)
 
-- **Theme Reactive**: Automatically switches between Light and Dark mode icon designs to match your Windows theme in real time.
- <img width="68" height="42" alt="image" src="https://github.com/user-attachments/assets/d4e73abb-3839-49c1-a77c-6e5ca0e9446f" />
+### 💬 Rich Hover Tooltips
+Hover over the tray icon to see the device name, battery percentage, and charging status in a native Windows tooltip:
 
-- **Local HTTP REST API**: Optional embedded web server (running on `http://localhost:12321/`) exposing device battery data for widgets, Stream Deck profiles, or custom integrations.
-  <img width="238" height="140" alt="image" src="https://github.com/user-attachments/assets/debddbcc-ceee-4c43-a382-8416c4f57d8f" />
+![Rich Hover Tooltip](https://github.com/user-attachments/assets/81ba7718-6e19-486f-9f4b-808123ced674)
 
-- **Minimal Resource Footprint**: Extremely light on RAM and CPU, polling only on configurable intervals to protect mouse sleep mode and battery life.
+### 🔢 Numerical Mode
+Prefer exact numbers? Switch to numerical mode to display the battery percentage directly as a number on your taskbar:
+
+![Numerical Mode](https://github.com/user-attachments/assets/be51e2a0-a5b9-4da6-823d-b2b7723e324f)
+
+### 🌓 Theme Reactive (Light & Dark)
+Automatically switches between light and dark mode icon designs to match your Windows system theme in real time:
+
+![Theme Reactive](https://github.com/user-attachments/assets/d4e73abb-3839-49c1-a77c-6e5ca0e9446f)
+
+### 🌐 Built-in Local HTTP REST API
+Optional embedded web server (running on `http://localhost:12321/`) exposing device battery data for widgets, Stream Deck profiles, or custom integrations:
+
+![Local HTTP Server](https://github.com/user-attachments/assets/debddbcc-ceee-4c43-a382-8416c4f57d8f)
+
+### ⚡ Minimal Resource Footprint
+Extremely light on RAM and CPU, polling only on configurable intervals to protect mouse sleep mode and battery life.
 
 ---
 
